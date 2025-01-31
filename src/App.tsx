@@ -213,7 +213,7 @@ function App() {
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
           <div className="flex items-center justify-center mb-6">
             <Wallet className="h-8 w-8 text-indigo-600" />
-            <h1 className="ml-3 text-2xl font-bold">Family Budget Tracker</h1>
+            <h1 className="ml-3 text-2xl font-bold">Alexander Budget Tracker</h1>
           </div>
           
           {error && (
@@ -274,7 +274,7 @@ function App() {
           <div className="flex justify-between items-center">
             <div className="flex items-center">
               <Wallet className="h-8 w-8 text-indigo-600" />
-              <h1 className="ml-3 text-3xl font-bold text-gray-900">Family Budget Tracker</h1>
+              <h1 className="ml-3 text-3xl font-bold text-gray-900">Alexander Budget Tracker</h1>
             </div>
             <div className="flex items-center space-x-4">
               <button
