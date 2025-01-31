@@ -368,27 +368,34 @@ function App() {
               </p>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Spending Distribution</h3>
-            <div className="h-80">
-              <Pie data={chartData} options={{ maintainAspectRatio: false }} />
-            </div>
-          </div>
         </div>
 
         {/* Charts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Category Spending Chart */}
+          {/* Category Distribution Chart */}
           <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-bold mb-4">Spending by Category</h2>
+            <h2 className="text-xl font-bold mb-4">Category Distribution</h2>
             <div className="aspect-square">
-              <Pie data={chartData} options={{ maintainAspectRatio: false }} />
+              <Pie 
+                data={chartData} 
+                options={{ 
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: 'bottom',
+                      labels: {
+                        usePointStyle: true,
+                      }
+                    }
+                  }
+                }} 
+              />
             </div>
           </div>
 
           {/* Daily Spending Chart */}
           <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-bold mb-4">Daily Spending by Category (Last 7 Days)</h2>
+            <h2 className="text-xl font-bold mb-4">Daily Spending by Category</h2>
             <div className="aspect-square">
               <Bar 
                 data={getDailySpendingData()} 
