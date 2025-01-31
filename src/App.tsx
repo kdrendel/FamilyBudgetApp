@@ -3,8 +3,8 @@ import { PlusCircle, Wallet, ArrowUpCircle, ArrowDownCircle, PieChart } from 'lu
 import { supabase } from './lib/supabase';
 import type { Category, Transaction } from './types';
 import { format } from 'date-fns';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement } from 'chart.js';
-import { Pie, Line } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement, BarElement } from 'chart.js';
+import { Pie, Line, Bar } from 'react-chartjs-2';
 
 ChartJS.register(
   ArcElement, 
@@ -13,7 +13,8 @@ ChartJS.register(
   LineElement, 
   CategoryScale, 
   LinearScale, 
-  PointElement
+  PointElement,
+  BarElement
 );
 
 const DEFAULT_CATEGORIES = [
@@ -216,12 +217,6 @@ function App() {
   };
 
   function getDailySpendingData() {
-    const dailyTotals = transactions.reduce((acc, transaction) => {
-      const date = transaction.date;
-      acc[date] = (acc[date] || 0) + transaction.amount;
-      return acc;
-    }, {} as Record<string, number>);
-
     // Get last 7 days
     const dates = Array.from({length: 7}, (_, i) => {
       const d = new Date();
@@ -229,18 +224,34 @@ function App() {
       return format(d, 'yyyy-MM-dd');
     }).reverse();
 
+    // Create a map of daily transactions by category
+    const dailyCategoryTotals = dates.reduce((acc, date) => {
+      acc[date] = categories.reduce((catAcc, cat) => {
+        catAcc[cat.id] = 0;
+        return catAcc;
+      }, {} as Record<string, number>);
+      return acc;
+    }, {} as Record<string, Record<string, number>>);
+
+    // Fill in the actual amounts
+    transactions.forEach(transaction => {
+      const date = transaction.date;
+      if (dailyCategoryTotals[date]) {
+        dailyCategoryTotals[date][transaction.category_id] = 
+          (dailyCategoryTotals[date][transaction.category_id] || 0) + Math.abs(transaction.amount);
+      }
+    });
+
     return {
       labels: dates.map(date => format(new Date(date), 'MMM d')),
-      datasets: [
-        {
-          label: 'Daily Spending',
-          data: dates.map(date => Math.abs(dailyTotals[date] || 0)),
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99, 102, 241, 0.1)',
-          tension: 0.4,
-          fill: true,
-        },
-      ],
+      datasets: categories.map(category => ({
+        label: category.name,
+        data: dates.map(date => dailyCategoryTotals[date][category.id] || 0),
+        backgroundColor: category.color,
+        borderColor: category.color,
+        borderWidth: 1,
+        stack: 'stack1',
+      })),
     };
   }
 
@@ -306,39 +317,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <Wallet className="h-8 w-8 text-indigo-600" />
-              <h1 className="ml-3 text-3xl font-bold text-gray-900">Alexander Budget Tracker</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setShowAddCategory(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-              >
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Add Category
-              </button>
-              <button
-                onClick={() => setShowAddTransaction(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
-              >
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Add Transaction
-              </button>
-              <button
-                onClick={handleSignOut}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -410,14 +388,18 @@ function App() {
 
           {/* Daily Spending Chart */}
           <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-bold mb-4">Daily Spending (Last 7 Days)</h2>
+            <h2 className="text-xl font-bold mb-4">Daily Spending by Category (Last 7 Days)</h2>
             <div className="aspect-square">
-              <Line 
+              <Bar 
                 data={getDailySpendingData()} 
                 options={{
                   maintainAspectRatio: false,
                   scales: {
+                    x: {
+                      stacked: true,
+                    },
                     y: {
+                      stacked: true,
                       beginAtZero: true,
                       ticks: {
                         callback: (value) => `$${value}`
@@ -427,7 +409,13 @@ function App() {
                   plugins: {
                     tooltip: {
                       callbacks: {
-                        label: (context) => `$${context.raw}`
+                        label: (context) => `${context.dataset.label}: $${context.raw.toFixed(2)}`
+                      }
+                    },
+                    legend: {
+                      position: 'bottom',
+                      labels: {
+                        usePointStyle: true,
                       }
                     }
                   }
