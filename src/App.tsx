@@ -379,42 +379,75 @@ function App() {
         <div>
           <h2 className="text-2xl font-bold mb-4">Recent Transactions</h2>
           <div className="bg-white shadow rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+            {/* For larger screens */}
+            <div className="hidden md:block">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {transactions.map(transaction => (
+                    <tr key={transaction.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {format(new Date(transaction.date), 'MMM d, yyyy')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div
+                            className="h-2 w-2 rounded-full mr-2"
+                            style={{ backgroundColor: getCategoryColor(transaction.category_id) }}
+                          />
+                          <span className="text-sm text-gray-900">{getCategoryName(transaction.category_id)}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {transaction.description}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <span className={transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'}>
+                          ${Math.abs(transaction.amount).toFixed(2)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* For mobile screens */}
+            <div className="block md:hidden">
+              <div className="divide-y divide-gray-200">
                 {transactions.map(transaction => (
-                  <tr key={transaction.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {format(new Date(transaction.date), 'MMM d, yyyy')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
+                  <div key={transaction.id} className="p-4 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center space-x-2">
                         <div
-                          className="h-2 w-2 rounded-full mr-2"
+                          className="h-2 w-2 rounded-full"
                           style={{ backgroundColor: getCategoryColor(transaction.category_id) }}
                         />
-                        <span className="text-sm text-gray-900">{getCategoryName(transaction.category_id)}</span>
+                        <span className="text-sm font-medium text-gray-900">
+                          {getCategoryName(transaction.category_id)}
+                        </span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {transaction.description}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <span className={transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      <span className={`text-sm font-medium ${transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         ${Math.abs(transaction.amount).toFixed(2)}
                       </span>
-                    </td>
-                  </tr>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {format(new Date(transaction.date), 'MMM d, yyyy')}
+                    </div>
+                    <div className="text-sm text-gray-700 break-words">
+                      {transaction.description}
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
           </div>
         </div>
       </main>
