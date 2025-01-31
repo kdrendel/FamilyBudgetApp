@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, Wallet, ArrowUpCircle, ArrowDownCircle, PieChart } from 'lucide-react';
+import { PlusCircle, Wallet, ArrowUpCircle, ArrowDownCircle, PieChart, Link } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import type { Category, Transaction } from './types';
 import { format } from 'date-fns';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
+import { usePlaidLink } from 'react-plaid-link';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -20,6 +21,10 @@ const DEFAULT_CATEGORIES = [
   { name: 'Debt Payment', budget_limit: 500, color: '#00F5D4' },
   { name: 'Miscellaneous', budget_limit: 200, color: '#738290' }
 ];
+
+interface PlaidLinkToken {
+  link_token: string;
+}
 
 function App() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -39,6 +44,13 @@ function App() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [linkToken, setLinkToken] = useState<string | null>(null);
+  const [linkedAccounts, setLinkedAccounts] = useState<string[]>([]);
+
+  const { open, ready } = usePlaidLink({
+    token: linkToken,
+    onSuccess: onPlaidSuccess,
+  });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -56,6 +68,25 @@ function App() {
     if (user) {
       fetchCategories();
       fetchTransactions();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user && !linkToken) {
+      const getLinkToken = async () => {
+        const { data, error } = await supabase.functions.invoke('create-plaid-link-token', {
+          body: { user_id: user.id }
+        });
+
+        if (error) {
+          console.error('Error getting link token:', error);
+          return;
+        }
+
+        setLinkToken((data as PlaidLinkToken).link_token);
+      };
+
+      getLinkToken();
     }
   }, [user]);
 
@@ -207,6 +238,21 @@ function App() {
     ],
   };
 
+  const onPlaidSuccess = async (publicToken: string, metadata: any) => {
+    if (!user) return;
+
+    const { error } = await supabase.functions.invoke('exchange-plaid-token', {
+      body: { public_token: publicToken, user_id: user.id }
+    });
+
+    if (error) {
+      console.error('Error exchanging Plaid token:', error);
+      return;
+    }
+
+    fetchTransactions();
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -290,6 +336,14 @@ function App() {
               >
                 <PlusCircle className="h-4 w-4 mr-2" />
                 Add Transaction
+              </button>
+              <button
+                onClick={() => open()}
+                disabled={!ready}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700"
+              >
+                <Link className="h-4 w-4 mr-2" />
+                Connect Bank
               </button>
               <button
                 onClick={handleSignOut}
